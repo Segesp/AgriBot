@@ -1,0 +1,7 @@
+# Ignorar archivos generados por Prisma
+src/generated/**/*
+/src/generated/**/*
+prisma/client/**/*
+*.prisma
+node_modules
+.next 

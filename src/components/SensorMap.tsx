@@ -88,6 +88,22 @@ class LegendControl extends L.Control {
   }
 }
 
+// URL de los tiles para mapas topográficos
+const TOPOGRAPHIC_TILES = {
+  OpenTopoMap: {
+    url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+    attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
+  },
+  USGS_Topo: {
+    url: 'https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}',
+    attribution: 'Tiles courtesy of the <a href="https://usgs.gov/">U.S. Geological Survey</a>'
+  },
+  Stamen_Terrain: {
+    url: 'https://stamen-tiles-{s}.a.ssl.fastly.net/terrain/{z}/{x}/{y}{r}.png',
+    attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  }
+};
+
 // Componente principal del mapa
 export default function SensorMap({ data }: { data: any[] }) {
   const mapRef = useRef<HTMLDivElement>(null);
@@ -105,8 +121,11 @@ export default function SensorMap({ data }: { data: any[] }) {
       // Si no hay datos válidos, mostrar mapa en posición por defecto
       if (!leafletMap.current) {
         leafletMap.current = L.map(mapRef.current).setView([40.416775, -3.703790], 5); // Centro en España
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        
+        // Usar mapa topográfico en lugar de mapa de ciudad
+        L.tileLayer(TOPOGRAPHIC_TILES.OpenTopoMap.url, {
+          attribution: TOPOGRAPHIC_TILES.OpenTopoMap.attribution,
+          maxZoom: 17
         }).addTo(leafletMap.current);
       }
       return;
@@ -116,10 +135,29 @@ export default function SensorMap({ data }: { data: any[] }) {
     if (!leafletMap.current) {
       leafletMap.current = L.map(mapRef.current);
       
-      // Añadir capa base de OpenStreetMap
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      // Añadir capa base de mapa topográfico
+      L.tileLayer(TOPOGRAPHIC_TILES.OpenTopoMap.url, {
+        attribution: TOPOGRAPHIC_TILES.OpenTopoMap.attribution,
+        maxZoom: 17
       }).addTo(leafletMap.current);
+      
+      // Añadir control de capas para poder seleccionar diferentes mapas topográficos
+      const baseLayers = {
+        "OpenTopoMap": L.tileLayer(TOPOGRAPHIC_TILES.OpenTopoMap.url, {
+          attribution: TOPOGRAPHIC_TILES.OpenTopoMap.attribution,
+          maxZoom: 17
+        }),
+        "USGS Topo": L.tileLayer(TOPOGRAPHIC_TILES.USGS_Topo.url, {
+          attribution: TOPOGRAPHIC_TILES.USGS_Topo.attribution,
+          maxZoom: 16
+        }),
+        "Stamen Terrain": L.tileLayer(TOPOGRAPHIC_TILES.Stamen_Terrain.url, {
+          attribution: TOPOGRAPHIC_TILES.Stamen_Terrain.attribution,
+          maxZoom: 18
+        })
+      };
+      
+      L.control.layers(baseLayers, {}).addTo(leafletMap.current);
     }
     
     // Limpiar marcadores existentes

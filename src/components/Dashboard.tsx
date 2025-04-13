@@ -66,17 +66,16 @@ const StatsOverview = ({ data }: { data: SensorData[] }) => {
   };
   
   const tempStats = getStats('temperatura');
-  const humStats = getStats('humedad');
   const soilStats = getStats('humedadSuelo');
   
   return (
     <div className="bg-white rounded-lg shadow-md p-4 mb-6">
       <h2 className="text-xl font-semibold text-gray-700 mb-4">Resumen Estadístico (Últimas 24h)</h2>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="border-r border-gray-200 pr-4">
           <div className="flex items-center mb-2">
             <TemperatureIcon />
-            <h3 className="ml-2 font-medium">Temperatura (°C)</h3>
+            <h3 className="ml-2 font-medium">Temperatura del Suelo (°C)</h3>
           </div>
           <div className="grid grid-cols-3 gap-2 text-sm">
             <div>
@@ -90,27 +89,6 @@ const StatsOverview = ({ data }: { data: SensorData[] }) => {
             <div>
               <span className="text-gray-500 block">Máx</span>
               <span className="font-semibold text-red-600">{tempStats.max}</span>
-            </div>
-          </div>
-        </div>
-        
-        <div className="border-r border-gray-200 px-4">
-          <div className="flex items-center mb-2">
-            <HumidityIcon />
-            <h3 className="ml-2 font-medium">Humedad Ambiente (%)</h3>
-          </div>
-          <div className="grid grid-cols-3 gap-2 text-sm">
-            <div>
-              <span className="text-gray-500 block">Mín</span>
-              <span className="font-semibold text-red-600">{humStats.min}</span>
-            </div>
-            <div>
-              <span className="text-gray-500 block">Prom</span>
-              <span className="font-semibold">{humStats.avg}</span>
-            </div>
-            <div>
-              <span className="text-gray-500 block">Máx</span>
-              <span className="font-semibold text-blue-600">{humStats.max}</span>
             </div>
           </div>
         </div>
@@ -480,7 +458,7 @@ export default function Dashboard() {
           {/* Tarjetas de datos actuales */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <SensorCard
-              title="Temperatura"
+              title="Temperatura del Suelo"
               value={latestData.temperatura?.toFixed(1) ?? 'N/A'}
               unit="°C"
               icon={<TemperatureIcon />}
@@ -490,19 +468,6 @@ export default function Dashboard() {
               status={getSensorStatus(latestData.temperatura, 15, 30)}
               minValue={0}
               maxValue={40}
-            />
-            
-            <SensorCard
-              title="Humedad Ambiente"
-              value={latestData.humedad?.toFixed(1) ?? 'N/A'}
-              unit="%"
-              icon={<HumidityIcon />}
-              color="#3B82F6"
-              lastUpdate={lastUpdate}
-              trend={getTrend(filteredData, 'humedad')}
-              status={getSensorStatus(latestData.humedad, 30, 80, true)}
-              minValue={0}
-              maxValue={100}
             />
             
             <SensorCard
@@ -532,18 +497,6 @@ export default function Dashboard() {
             />
             
             <SensorCard
-              title="Luminosidad"
-              value={latestData.luz?.toFixed(0) ?? 'N/A'}
-              unit="lux"
-              icon={<LightIcon />}
-              color="#F59E0B"
-              lastUpdate={lastUpdate}
-              trend={getTrend(filteredData, 'luz')}
-              minValue={0}
-              maxValue={10000}
-            />
-            
-            <SensorCard
               title="Batería"
               value={latestData.bateria?.toFixed(1) ?? 'N/A'}
               unit="%"
@@ -564,21 +517,12 @@ export default function Dashboard() {
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <SensorChart
-                  title="Temperatura"
+                  title="Temperatura del Suelo"
                   data={temperatureData}
                   labels={timeLabels}
                   color="#EF4444"
                   unit="°C"
                   targetValue={23}
-                />
-                
-                <SensorChart
-                  title="Humedad Ambiente"
-                  data={humidityData}
-                  labels={timeLabels}
-                  color="#3B82F6"
-                  unit="%"
-                  targetValue={55}
                 />
                 
                 <SensorChart
@@ -591,11 +535,19 @@ export default function Dashboard() {
                 />
                 
                 <SensorChart
-                  title="Luminosidad"
-                  data={lightData}
+                  title="Salinidad del Suelo"
+                  data={salinityData}
                   labels={timeLabels}
-                  color="#F59E0B"
-                  unit="lux"
+                  color="#0D9488"
+                  unit="dS/m"
+                />
+                
+                <SensorChart
+                  title="Batería"
+                  data={filteredData.map(d => d.bateria as number)}
+                  labels={timeLabels}
+                  color="#6B7280"
+                  unit="%"
                 />
               </div>
             </div>

@@ -1,29 +1,14 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 
+// Ruta simple para pruebas que no requiere Prisma
 export async function GET() {
-  try {
-    // Contar registros en la tabla SensorData
-    const count = await prisma.sensorData.count();
-    
-    // Obtener los últimos registros
-    const records = await prisma.sensorData.findMany({
-      take: 5,
-      orderBy: {
-        timestamp: 'desc'
-      }
-    });
-    
-    return NextResponse.json({ 
-      success: true, 
-      count,
-      records
-    });
-  } catch (error) {
-    console.error('Error al probar la conexión DB:', error);
-    return NextResponse.json({ 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Error desconocido' 
-    }, { status: 500 });
-  }
+  return NextResponse.json({
+    status: "success",
+    message: "Test API funcionando correctamente",
+    timestamp: new Date().toISOString(),
+    database: {
+      status: "simulada",
+      info: "Este endpoint no se conecta a la base de datos real"
+    }
+  });
 } 

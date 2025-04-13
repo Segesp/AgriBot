@@ -23,6 +23,7 @@ model SensorData {
   humedad     Float?
   luz         Float?
   humedadSuelo Float?
+  salinidad    Float?
   
   // Ubicación (opcional, si el SIM800L proporciona datos GPS)
   latitud     Float?

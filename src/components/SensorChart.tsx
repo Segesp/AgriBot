@@ -170,7 +170,8 @@ export default function SensorChart({
     scales: {
       x: {
         grid: {
-          display: false
+          display: false,
+          color: 'rgba(0,0,0,0.05)'
         },
         ticks: {
           font: {

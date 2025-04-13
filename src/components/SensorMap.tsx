@@ -35,8 +35,13 @@ const filterValidCoordinates = (data: any[]): GeoData[] => {
   ) as GeoData[];
 };
 
+// Extender los tipos de Leaflet para corregir errores
+interface MarkerOptions extends L.CircleMarkerOptions {
+  radius: number;
+}
+
 // Opciones para el marcador del mapa
-const getMarkerOptions = (salinidad: number | null) => {
+const getMarkerOptions = (salinidad: number | null): MarkerOptions => {
   if (salinidad === null) return { color: '#777', fillColor: '#999', radius: 8 };
   
   // Escala de colores basada en niveles de salinidad
@@ -53,6 +58,35 @@ const getMarkerOptions = (salinidad: number | null) => {
     radius: 8 + Math.min(salinidad, 8) * 0.5, // Radio proporcional al nivel de salinidad
   };
 };
+
+// Definir tipo personalizado para la leyenda
+class LegendControl extends L.Control {
+  onAdd(map: L.Map): HTMLElement {
+    const div = L.DomUtil.create('div', 'legend');
+    div.innerHTML = `
+      <div style="background: white; padding: 10px; border-radius: 5px; box-shadow: 0 1px 5px rgba(0,0,0,0.2)">
+        <h4 style="margin: 0 0 8px; font-size: 14px">Nivel de Salinidad (dS/m)</h4>
+        <div style="display: flex; align-items: center; margin-bottom: 5px">
+          <div style="width: 15px; height: 15px; border-radius: 50%; background: #4ade80; margin-right: 5px"></div>
+          <span>&lt; 2 (Óptimo)</span>
+        </div>
+        <div style="display: flex; align-items: center; margin-bottom: 5px">
+          <div style="width: 15px; height: 15px; border-radius: 50%; background: #facc15; margin-right: 5px"></div>
+          <span>2 - 4 (Moderado)</span>
+        </div>
+        <div style="display: flex; align-items: center; margin-bottom: 5px">
+          <div style="width: 15px; height: 15px; border-radius: 50%; background: #f97316; margin-right: 5px"></div>
+          <span>4 - 8 (Alto)</span>
+        </div>
+        <div style="display: flex; align-items: center">
+          <div style="width: 15px; height: 15px; border-radius: 50%; background: #ef4444; margin-right: 5px"></div>
+          <span>&gt; 8 (Severo)</span>
+        </div>
+      </div>
+    `;
+    return div;
+  }
+}
 
 // Componente principal del mapa
 export default function SensorMap({ data }: { data: any[] }) {
@@ -110,7 +144,7 @@ export default function SensorMap({ data }: { data: any[] }) {
       const circle = L.circleMarker(
         [point.latitud, point.longitud], 
         getMarkerOptions(point.salinidad)
-      ).addTo(leafletMap.current!);
+      ).addTo(leafletMap.current as L.Map);
       
       // Contenido del popup
       const date = new Date(point.timestamp).toLocaleString('es-ES');
@@ -160,32 +194,8 @@ export default function SensorMap({ data }: { data: any[] }) {
       document.querySelector('.legend')?.remove();
     }
     
-    const legend = L.control({ position: 'bottomright' });
-    legend.onAdd = () => {
-      const div = L.DomUtil.create('div', 'legend');
-      div.innerHTML = `
-        <div style="background: white; padding: 10px; border-radius: 5px; box-shadow: 0 1px 5px rgba(0,0,0,0.2)">
-          <h4 style="margin: 0 0 8px; font-size: 14px">Nivel de Salinidad (dS/m)</h4>
-          <div style="display: flex; align-items: center; margin-bottom: 5px">
-            <div style="width: 15px; height: 15px; border-radius: 50%; background: #4ade80; margin-right: 5px"></div>
-            <span>&lt; 2 (Óptimo)</span>
-          </div>
-          <div style="display: flex; align-items: center; margin-bottom: 5px">
-            <div style="width: 15px; height: 15px; border-radius: 50%; background: #facc15; margin-right: 5px"></div>
-            <span>2 - 4 (Moderado)</span>
-          </div>
-          <div style="display: flex; align-items: center; margin-bottom: 5px">
-            <div style="width: 15px; height: 15px; border-radius: 50%; background: #f97316; margin-right: 5px"></div>
-            <span>4 - 8 (Alto)</span>
-          </div>
-          <div style="display: flex; align-items: center">
-            <div style="width: 15px; height: 15px; border-radius: 50%; background: #ef4444; margin-right: 5px"></div>
-            <span>&gt; 8 (Severo)</span>
-          </div>
-        </div>
-      `;
-      return div;
-    };
+    // Usar la clase personalizada para evitar errores de TypeScript
+    const legend = new LegendControl({ position: 'bottomright' });
     legend.addTo(leafletMap.current);
     
     // Asegurar que el mapa se renderice correctamente

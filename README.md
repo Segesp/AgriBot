@@ -1,36 +1,110 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AgriBot Dashboard
 
-## Getting Started
+Una aplicación web moderna para visualizar datos de sensores enviados desde un ESP32 mediante un módulo SIM800L.
 
-First, run the development server:
+## Características
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- 🌡️ Visualización en tiempo real de datos de sensores (temperatura, humedad, luz, humedad del suelo)
+- 📊 Gráficos históricos interactivos
+- 🔋 Monitoreo de batería del dispositivo
+- 📱 Diseño responsive para móviles, tablets y escritorio
+- 🔄 Actualización automática de datos
+- 🗺️ Soporte para datos de ubicación GPS (opcional)
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Tecnologías Utilizadas
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Frontend**: Next.js, React, TailwindCSS
+- **Gráficos**: Chart.js, react-chartjs-2
+- **Backend**: Next.js API Routes
+- **Base de Datos**: SQLite con Prisma ORM
+- **Cliente HTTP**: Axios
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Requisitos Previos
 
-## Learn More
+- Node.js 18 o superior
+- npm o yarn
+- ESP32 con módulo SIM800L (para la parte de hardware)
 
-To learn more about Next.js, take a look at the following resources:
+## Instalación
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Clonar el repositorio:
+   ```bash
+   git clone https://github.com/tu-usuario/agribot-dashboard.git
+   cd agribot-dashboard
+   ```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+2. Instalar dependencias:
+   ```bash
+   npm install
+   ```
 
-## Deploy on Vercel
+3. Configurar la base de datos:
+   ```bash
+   npx prisma migrate dev
+   ```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+4. Iniciar el servidor de desarrollo:
+   ```bash
+   npm run dev
+   ```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+5. Visita `http://localhost:3000` en tu navegador.
+
+## Configuración del ESP32
+
+En la carpeta `examples` encontrarás el archivo `ESP32_SIM800L.ino` con un código de ejemplo para configurar tu ESP32 con el módulo SIM800L. Necesitarás:
+
+1. Arduino IDE o PlatformIO
+2. Bibliotecas: SoftwareSerial, Wire
+3. Sensores (opcional): temperatura, humedad, luz, humedad del suelo
+4. Módulo SIM800L con tarjeta SIM con plan de datos
+
+Ajusta los siguientes parámetros en el código:
+- La URL del servidor donde se aloja la aplicación
+- El APN de tu proveedor de telefonía móvil
+- El ID único del dispositivo
+- Los pines conectados a cada sensor
+
+## Uso de la API
+
+La aplicación expone los siguientes endpoints:
+
+- `POST /api/datos`: Para enviar datos desde el ESP32
+  ```json
+  {
+    "deviceId": "ESP32_001",
+    "temperatura": 25.5,
+    "humedad": 65.2,
+    "luz": 3500,
+    "humedadSuelo": 42.8,
+    "bateria": 87.3,
+    "latitud": 19.4326,
+    "longitud": -99.1332
+  }
+  ```
+
+- `GET /api/datos`: Para obtener los últimos datos (usado por el dashboard)
+
+## Despliegue
+
+Para desplegar la aplicación en producción:
+
+1. Construye la aplicación:
+   ```bash
+   npm run build
+   ```
+
+2. Inicia el servidor en producción:
+   ```bash
+   npm start
+   ```
+
+Para despliegue en plataformas como Vercel o Netlify, asegúrate de configurar correctamente las variables de entorno para la conexión a la base de datos.
+
+## Contribuir
+
+Las contribuciones son bienvenidas. Por favor, abre un issue para discutir los cambios propuestos antes de enviar un pull request.
+
+## Licencia
+
+[MIT](LICENSE)

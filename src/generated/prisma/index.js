@@ -84,6 +84,9 @@ Prisma.NullTypes = {
  * Enums
  */
 exports.Prisma.TransactionIsolationLevel = makeStrictEnum({
+  ReadUncommitted: 'ReadUncommitted',
+  ReadCommitted: 'ReadCommitted',
+  RepeatableRead: 'RepeatableRead',
   Serializable: 'Serializable'
 });
 
@@ -104,6 +107,11 @@ exports.Prisma.SensorDataScalarFieldEnum = {
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
+};
+
+exports.Prisma.QueryMode = {
+  default: 'default',
+  insensitive: 'insensitive'
 };
 
 exports.Prisma.NullsOrder = {
@@ -144,7 +152,7 @@ const config = {
     "isCustomOutput": true
   },
   "relativeEnvPaths": {
-    "rootEnvPath": "../../../.env",
+    "rootEnvPath": null,
     "schemaEnvPath": "../../../.env"
   },
   "relativePath": "../../../prisma",
@@ -153,17 +161,18 @@ const config = {
   "datasourceNames": [
     "db"
   ],
-  "activeProvider": "sqlite",
+  "activeProvider": "postgresql",
+  "postinstall": false,
   "inlineDatasources": {
     "db": {
       "url": {
         "fromEnvVar": "DATABASE_URL",
-        "value": "file:./dev.db"
+        "value": null
       }
     }
   },
-  "inlineSchema": "// This is your Prisma schema file,\n// learn more about it in the docs: https://pris.ly/d/prisma-schema\n\n// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?\n// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init\n\ngenerator client {\n  provider = \"prisma-client-js\"\n  output   = \"../src/generated/prisma\"\n}\n\ndatasource db {\n  provider = \"sqlite\"\n  url      = env(\"DATABASE_URL\")\n}\n\nmodel SensorData {\n  id        Int      @id @default(autoincrement())\n  timestamp DateTime @default(now())\n\n  // Datos de sensores\n  temperatura  Float?\n  humedad      Float?\n  luz          Float?\n  humedadSuelo Float?\n\n  // Ubicación (opcional, si el SIM800L proporciona datos GPS)\n  latitud  Float?\n  longitud Float?\n\n  // Información del dispositivo\n  deviceId String\n  bateria  Float?\n\n  // Metadatos\n  createdAt DateTime @default(now())\n}\n",
-  "inlineSchemaHash": "6388988008a63cae76631d1087e21a356fc2612778a0787a60fafdf01bdb652f",
+  "inlineSchema": "// This is your Prisma schema file,\n// learn more about it in the docs: https://pris.ly/d/prisma-schema\n\n// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?\n// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init\n\ngenerator client {\n  provider = \"prisma-client-js\"\n  output   = \"../src/generated/prisma\"\n}\n\ndatasource db {\n  provider = \"postgresql\"\n  url      = env(\"DATABASE_URL\")\n}\n\nmodel SensorData {\n  id        Int      @id @default(autoincrement())\n  timestamp DateTime @default(now())\n\n  // Datos de sensores\n  temperatura  Float?\n  humedad      Float?\n  luz          Float?\n  humedadSuelo Float?\n\n  // Ubicación (opcional, si el SIM800L proporciona datos GPS)\n  latitud  Float?\n  longitud Float?\n\n  // Información del dispositivo\n  deviceId String\n  bateria  Float?\n\n  // Metadatos\n  createdAt DateTime @default(now())\n}\n",
+  "inlineSchemaHash": "3d163698df4569b5ded245254aaf39938687143991b402952e9f0bd939a15b2c",
   "copyEngine": true
 }
 

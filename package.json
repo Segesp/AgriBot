@@ -8,8 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "postinstall": "prisma generate",
-    "test-db": "node test-connection.js",
-    "vercel-build": "prisma generate && prisma migrate deploy && next build"
+    "test-db": "node test-connection.js"
   },
   "dependencies": {
     "@prisma/client": "^6.6.0",

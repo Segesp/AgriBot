@@ -1,8 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
+// Función para verificar si Prisma está conectado
+function isPrismaConnected() {
+  try {
+    // Intentar ejecutar una operación simple para verificar conexión
+    prisma.$queryRaw`SELECT 1`;
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
+    // Verificar que Prisma esté conectado
+    if (!isPrismaConnected()) {
+      return NextResponse.json(
+        { error: 'Error de conexión con la base de datos' },
+        { status: 500 }
+      );
+    }
+
     const body = await request.json();
     
     // Validación básica
@@ -41,6 +60,14 @@ export async function POST(request: NextRequest) {
 
 export async function GET() {
   try {
+    // Verificar que Prisma esté conectado
+    if (!isPrismaConnected()) {
+      return NextResponse.json(
+        { error: 'Error de conexión con la base de datos' },
+        { status: 500 }
+      );
+    }
+
     // Obteniendo los datos más recientes (últimos 100)
     const sensorData = await prisma.sensorData.findMany({
       take: 100,

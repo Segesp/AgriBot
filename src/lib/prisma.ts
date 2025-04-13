@@ -1,14 +1,18 @@
-import { PrismaClient } from '@prisma/client';
+// Este archivo configura el cliente Prisma para funcionar en diferentes entornos
+import { PrismaClient } from '@prisma/client'
 
-// PrismaClient es adjuntado al objeto global para prevenir
-// múltiples instancias del cliente Prisma en entornos de desarrollo/testing
-declare global {
-  var prisma: PrismaClient | undefined;
+// Variable para guardar la instancia del cliente
+let prisma: PrismaClient
+
+// En entornos de producción, crear una nueva instancia por cada invocación
+if (process.env.NODE_ENV === 'production') {
+  prisma = new PrismaClient()
+} else {
+  // En desarrollo, reutilizar la misma instancia para evitar demasiadas conexiones
+  if (!(global as any).prisma) {
+    (global as any).prisma = new PrismaClient()
+  }
+  prisma = (global as any).prisma
 }
 
-// En producción, es mejor no usar el objeto global
-export const prisma = global.prisma || new PrismaClient();
-
-if (process.env.NODE_ENV !== 'production') {
-  global.prisma = prisma;
-} 
+export { prisma } 

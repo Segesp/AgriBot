@@ -27,6 +27,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, data: sensorData });
   } catch (error) {
     console.error('Error al procesar datos:', error);
+    
+    // Manejo detallado de errores
+    if (error instanceof Error) {
+      return NextResponse.json({ 
+        error: `Error al procesar la solicitud: ${error.message}` 
+      }, { status: 500 });
+    }
+    
     return NextResponse.json({ error: 'Error al procesar la solicitud' }, { status: 500 });
   }
 }
@@ -44,6 +52,14 @@ export async function GET() {
     return NextResponse.json({ data: sensorData });
   } catch (error) {
     console.error('Error al obtener datos:', error);
+    
+    // Manejo detallado de errores
+    if (error instanceof Error) {
+      return NextResponse.json({ 
+        error: `Error al obtener datos: ${error.message}` 
+      }, { status: 500 });
+    }
+    
     return NextResponse.json({ error: 'Error al obtener datos' }, { status: 500 });
   }
 } 

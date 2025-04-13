@@ -2,18 +2,24 @@
 
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import SensorCard from './SensorCard';
+import { SensorCard } from './SensorCard';
 import SensorChart from './SensorChart';
 import SensorMap from './SensorMap';
 import dynamic from 'next/dynamic';
 import { 
   TemperatureIcon, 
+  TemperatureAlertIcon,
   HumidityIcon, 
+  HumidityLowIcon,
   LightIcon, 
   SoilIcon, 
   BatteryIcon, 
   LocationIcon,
-  SalinityIcon 
+  SalinityIcon,
+  SalinityHighIcon,
+  WaterDropIcon,
+  NutrientIcon,
+  PHIcon
 } from './Icons';
 
 // Cargar el mapa dinámicamente para evitar problemas de SSR
@@ -40,6 +46,9 @@ interface SensorData {
   deviceId: string;
   bateria: number | null;
   createdAt: Date;
+  // Campos adicionales opcionales
+  ph?: number | null;
+  nutrientes?: string | null;
 }
 
 // Componente para mostrar estadísticas resumidas
@@ -461,53 +470,85 @@ export default function Dashboard() {
               title="Temperatura del Suelo"
               value={latestData.temperatura?.toFixed(1) ?? 'N/A'}
               unit="°C"
-              icon={<TemperatureIcon />}
+              icon={latestData.temperatura && latestData.temperatura > 30 ? 
+                <TemperatureAlertIcon size="h-10 w-10" /> : 
+                <TemperatureIcon size="h-10 w-10" withPulse={latestData.temperatura ? latestData.temperatura > 28 : false} />
+              }
               color="#EF4444"
               lastUpdate={lastUpdate}
-              trend={getTrend(filteredData, 'temperatura')}
-              status={getSensorStatus(latestData.temperatura, 15, 30)}
-              minValue={0}
-              maxValue={40}
+              isAlert={latestData.temperatura ? latestData.temperatura > 30 : false}
             />
             
             <SensorCard
               title="Humedad del Suelo"
               value={latestData.humedadSuelo?.toFixed(1) ?? 'N/A'}
               unit="%"
-              icon={<SoilIcon />}
+              icon={latestData.humedadSuelo && latestData.humedadSuelo < 20 ? 
+                <HumidityLowIcon size="h-10 w-10" /> : 
+                <SoilIcon size="h-10 w-10" withPulse={latestData.humedadSuelo ? latestData.humedadSuelo < 25 : false} />
+              }
               color="#10B981"
               lastUpdate={lastUpdate}
-              trend={getTrend(filteredData, 'humedadSuelo')}
-              status={getSensorStatus(latestData.humedadSuelo, 20, 70, true)}
-              minValue={0}
-              maxValue={100}
+              isAlert={latestData.humedadSuelo ? latestData.humedadSuelo < 20 : false}
             />
             
             <SensorCard
               title="Salinidad del Suelo"
               value={latestData.salinidad?.toFixed(2) ?? 'N/A'}
               unit="dS/m"
-              icon={<SalinityIcon />}
-              color="#0D9488"
+              icon={latestData.salinidad && latestData.salinidad > 4 ? 
+                <SalinityHighIcon size="h-10 w-10" /> : 
+                <SalinityIcon size="h-10 w-10" withPulse={latestData.salinidad ? latestData.salinidad > 3 : false} />
+              }
+              color={latestData.salinidad && latestData.salinidad > 4 ? "#EF4444" : "#0D9488"}
               lastUpdate={lastUpdate}
-              trend={getTrend(filteredData, 'salinidad')}
-              status={getSensorStatus(latestData.salinidad, 2, 4)}
-              minValue={0}
-              maxValue={8}
+              isAlert={latestData.salinidad ? latestData.salinidad > 4 : false}
             />
             
             <SensorCard
               title="Batería"
               value={latestData.bateria?.toFixed(1) ?? 'N/A'}
               unit="%"
-              icon={<BatteryIcon />}
-              color="#6B7280"
+              icon={<BatteryIcon 
+                size="h-10 w-10" 
+                level={latestData.bateria ?? 100}
+              />}
+              color={latestData.bateria && latestData.bateria <= 20 ? "#EF4444" : "#10B981"}
               lastUpdate={lastUpdate}
-              trend={getTrend(filteredData, 'bateria', false)}
-              status={getSensorStatus(latestData.bateria, 30, 15, true, true)}
-              minValue={0}
-              maxValue={100}
+              isAlert={latestData.bateria ? latestData.bateria <= 20 : false}
             />
+
+            {latestData.ph !== undefined && (
+              <SensorCard
+                title="pH del Suelo"
+                value={(latestData.ph ?? 7).toFixed(1)}
+                unit="pH"
+                icon={<PHIcon size="h-10 w-10" withPulse={latestData.ph ? (latestData.ph < 5.5 || latestData.ph > 8) : false} />}
+                color={
+                  latestData.ph && latestData.ph < 5.5 ? "#EF4444" :
+                  latestData.ph && latestData.ph > 8 ? "#F59E0B" : 
+                  "#10B981"
+                }
+                lastUpdate={lastUpdate}
+                isAlert={latestData.ph ? (latestData.ph < 5.5 || latestData.ph > 8) : false}
+              />
+            )}
+
+            {latestData.nutrientes !== undefined && (
+              <SensorCard
+                title="Nutrientes Disponibles"
+                value={(latestData.nutrientes ?? "Med").toString()}
+                unit=""
+                icon={<NutrientIcon size="h-10 w-10" withPulse={latestData.nutrientes === "Bajo"} />}
+                color={
+                  latestData.nutrientes === "Bajo" ? "#EF4444" :
+                  latestData.nutrientes === "Alto" ? "#10B981" : 
+                  "#F59E0B"
+                }
+                lastUpdate={lastUpdate}
+                isAlert={latestData.nutrientes === "Bajo"}
+              />
+            )}
           </div>
           
           {/* Gráficos históricos */}
@@ -567,13 +608,22 @@ export default function Dashboard() {
               {/* Temperatura */}
               <div>
                 <h3 className="text-lg font-medium text-gray-700 mb-3 flex items-center">
-                  <TemperatureIcon />
-                  <span className="ml-2">Análisis de Temperatura</span>
+                  <div className={`h-8 w-8 ${
+                    latestData && latestData.temperatura && latestData.temperatura > 30
+                      ? 'animate-pulse'
+                      : ''
+                  }`}>
+                    {latestData && latestData.temperatura && latestData.temperatura > 30 ? 
+                      <TemperatureAlertIcon size="h-8 w-8" /> : 
+                      <TemperatureIcon size="h-8 w-8" />
+                    }
+                  </div>
+                  <span className="ml-2">Análisis de Temperatura del Suelo</span>
                 </h3>
                 
                 <div className="w-full bg-gray-200 rounded-full h-2.5">
                   <div 
-                    className="bg-red-500 h-2.5 rounded-full" 
+                    className="bg-red-500 h-2.5 rounded-full transition-all duration-500" 
                     style={{ 
                       width: latestData && latestData.temperatura 
                         ? `${Math.min(100, (latestData.temperatura / 40) * 100)}%` 
@@ -639,13 +689,22 @@ export default function Dashboard() {
               {/* Humedad del Suelo */}
               <div>
                 <h3 className="text-lg font-medium text-gray-700 mb-3 flex items-center">
-                  <SoilIcon />
+                  <div className={`h-8 w-8 ${
+                    latestData && latestData.humedadSuelo && latestData.humedadSuelo < 20
+                      ? 'animate-pulse'
+                      : ''
+                  }`}>
+                    {latestData && latestData.humedadSuelo && latestData.humedadSuelo < 20 ? 
+                      <HumidityLowIcon size="h-8 w-8" /> : 
+                      <SoilIcon size="h-8 w-8" />
+                    }
+                  </div>
                   <span className="ml-2">Análisis de Humedad del Suelo</span>
                 </h3>
                 
                 <div className="w-full bg-gray-200 rounded-full h-2.5">
                   <div 
-                    className={`h-2.5 rounded-full ${
+                    className={`h-2.5 rounded-full transition-all duration-500 ease-in-out ${
                       latestData && latestData.humedadSuelo
                         ? latestData.humedadSuelo < 20 
                           ? 'bg-red-500' 
@@ -706,6 +765,89 @@ export default function Dashboard() {
                     </p>
                     <p className="text-xs text-gray-500 mt-2">
                       La humedad actual es {latestData?.humedadSuelo?.toFixed(1) ?? 'N/A'}%
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Salinidad del Suelo */}
+              <div>
+                <h3 className="text-lg font-medium text-gray-700 mb-3 flex items-center">
+                  <div className={`h-8 w-8 ${
+                    latestData && latestData.salinidad && latestData.salinidad > 4
+                      ? 'animate-pulse'
+                      : ''
+                  }`}>
+                    {latestData && latestData.salinidad && latestData.salinidad > 4 ? 
+                      <SalinityHighIcon size="h-8 w-8" /> : 
+                      <SalinityIcon size="h-8 w-8" />
+                    }
+                  </div>
+                  <span className="ml-2">Análisis de Salinidad del Suelo</span>
+                </h3>
+                
+                <div className="w-full bg-gray-200 rounded-full h-2.5">
+                  <div 
+                    className="h-2.5 rounded-full transition-all duration-500 ease-in-out"
+                    style={{ 
+                      width: latestData && latestData.salinidad 
+                        ? `${Math.min(100, (latestData.salinidad / 8) * 100)}%` 
+                        : '0%',
+                      background: latestData && latestData.salinidad
+                        ? latestData.salinidad < 2
+                          ? '#10b981' // Verde
+                          : latestData.salinidad < 4
+                            ? '#f59e0b' // Amarillo
+                            : '#ef4444' // Rojo
+                        : '#9ca3af'
+                    }}
+                  ></div>
+                </div>
+                
+                <div className="flex justify-between text-xs text-gray-600 mt-1">
+                  <span>0 dS/m</span>
+                  <span>2 dS/m</span>
+                  <span>4 dS/m</span>
+                  <span>6 dS/m</span>
+                  <span>8+ dS/m</span>
+                </div>
+                
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-4 bg-gray-50 rounded-lg">
+                    <h4 className="text-sm font-medium text-gray-500 mb-1">Interpretación</h4>
+                    <div className="space-y-2 mt-2">
+                      <div className="flex items-center">
+                        <div className="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
+                        <span className="text-xs">Óptimo (&lt;2 dS/m): Adecuado para cultivos</span>
+                      </div>
+                      <div className="flex items-center">
+                        <div className="w-3 h-3 rounded-full bg-yellow-500 mr-2"></div>
+                        <span className="text-xs">Moderado (2-4 dS/m): Vigilar desarrollo</span>
+                      </div>
+                      <div className="flex items-center">
+                        <div className="w-3 h-3 rounded-full bg-orange-500 mr-2"></div>
+                        <span className="text-xs">Alto (4-6 dS/m): Afecta algunos cultivos</span>
+                      </div>
+                      <div className="flex items-center">
+                        <div className="w-3 h-3 rounded-full bg-red-500 mr-2"></div>
+                        <span className="text-xs">Severo (&gt;6 dS/m): Riesgo para la mayoría de cultivos</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="p-4 bg-gray-50 rounded-lg">
+                    <h4 className="text-sm font-medium text-gray-500 mb-1">Recomendación</h4>
+                    <p className="font-medium">
+                      {latestData && latestData.salinidad
+                        ? latestData.salinidad > 4 
+                          ? 'Aumento de riego para lixiviación de sales' 
+                          : latestData.salinidad > 2 
+                            ? 'Monitoreo frecuente y selección de cultivos tolerantes' 
+                            : 'Niveles adecuados, mantener manejo actual'
+                        : 'N/A'}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-2">
+                      La salinidad actual es {latestData?.salinidad?.toFixed(2) ?? 'N/A'} dS/m
                     </p>
                   </div>
                 </div>

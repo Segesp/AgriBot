@@ -5,7 +5,6 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { interpolateYlOrRd, interpolateRdYlBu, interpolateViridis } from 'd3-scale-chromatic';
 import { scaleLinear } from 'd3-scale';
-import 'leaflet.heat';
 
 // Define la interfaz para los datos georreferenciados
 export interface GeoData {
@@ -407,6 +406,23 @@ export default function SensorMap({ data }: { data: any[] }) {
     smoothing: true      // suavizado activado/desactivado
   });
   
+  // Cargar el plugin leaflet.heat dinámicamente
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      // Verificar si ya está cargado
+      if (!(L as any).heatLayer) {
+        // Crear y añadir el script al documento
+        const script = document.createElement('script');
+        script.src = 'https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js';
+        script.async = true;
+        script.onload = () => {
+          console.log('Leaflet.heat cargado correctamente');
+        };
+        document.body.appendChild(script);
+      }
+    }
+  }, []);
+  
   // Solucionar problemas con iconos de Leaflet en Next.js
   useEffect(() => {
     (async () => {
@@ -659,70 +675,93 @@ export default function SensorMap({ data }: { data: any[] }) {
     
     // 3. Añadir heatmap si está activado
     if (showHeatmap && validData.length > 0) {
-      // Usar la función que considera la configuración
-      const heatData = prepareHeatmapDataWithConfig(validData, activeMetric);
-      
-      // Ajustar los parámetros del heatmap según la configuración
-      const heatmapRadius = interpolationConfig.resolution === 'alta' ? 20 : 
-                           interpolationConfig.resolution === 'baja' ? 30 : 25;
-      
-      const heatmapBlur = interpolationConfig.smoothing ? 
-                         (interpolationConfig.resolution === 'alta' ? 10 : 15) : 
-                         (interpolationConfig.resolution === 'alta' ? 5 : 8);
-      
-      // @ts-ignore - L.heatLayer no es reconocido por TypeScript
-      heatLayer.current = L.heatLayer(heatData, {
-        radius: heatmapRadius,
-        blur: heatmapBlur,
-        maxZoom: 17,
-        minOpacity: interpolationConfig.intensity === 'alta' ? 0.5 : 
-                   interpolationConfig.intensity === 'baja' ? 0.3 : 0.4,
-        gradient: {
-          0.0: activeMetric === 'temperatura' ? '#4575b4' : 
-                activeMetric === 'humedadSuelo' ? '#d73027' : '#4ade80',
-          0.25: activeMetric === 'temperatura' ? '#91bfdb' : 
-                activeMetric === 'humedadSuelo' ? '#fc8d59' : '#facc15',
-          0.5: activeMetric === 'temperatura' ? '#ffffbf' : 
-                activeMetric === 'humedadSuelo' ? '#ffffbf' : '#facc15',
-          0.75: activeMetric === 'temperatura' ? '#fc8d59' : 
-                activeMetric === 'humedadSuelo' ? '#91bfdb' : '#f97316',
-          1.0: activeMetric === 'temperatura' ? '#d73027' : 
-                activeMetric === 'humedadSuelo' ? '#4575b4' : '#ef4444',
-        }
-      }).addTo(leafletMap.current);
-      
-      // Ajustar la opacidad de los marcadores para que el heatmap sea más visible
-      markersLayer.current?.eachLayer((layer: any) => {
-        if (layer.setStyle) {
-          layer.setStyle({ fillOpacity: 0.4, opacity: 0.6 });
-        }
-      });
-      
-      // Añadir control de información sobre el modelo matemático utilizado
-      const infoControl = new L.Control({ position: 'bottomleft' });
-      infoControl.onAdd = function() {
-        const div = L.DomUtil.create('div', 'info-control');
-        div.innerHTML = `
-          <div style="background: rgba(255,255,255,0.8); padding: 8px; border-radius: 5px; box-shadow: 0 1px 5px rgba(0,0,0,0.2); font-size: 11px; max-width: 200px;">
-            <div style="margin-bottom: 3px; font-weight: bold;">Modelo de Interpolación</div>
-            <div>IDW (Inverse Distance Weighting) adaptativo con:</div>
-            <ul style="margin: 3px 0 3px 15px; padding: 0;">
-              <li>Resolución: ${interpolationConfig.resolution}</li>
-              <li>Intensidad: ${interpolationConfig.intensity}</li>
-              <li>Suavizado: ${interpolationConfig.smoothing ? 'Activado' : 'Desactivado'}</li>
-              <li>Potencia: ${(window as any).__interpolationParams?.potencia.toFixed(1) || '2.2'}</li>
-            </ul>
-            <div style="font-style: italic; margin-top: 3px; font-size: 10px;">
-              Los valores continuos se calculan ponderando los puntos cercanos con mayor influencia.
+      // Comprobar que el plugin leaflet.heat esté cargado
+      if ((L as any).heatLayer) {
+        // Usar la función que considera la configuración
+        const heatData = prepareHeatmapDataWithConfig(validData, activeMetric);
+        
+        // Ajustar los parámetros del heatmap según la configuración
+        const heatmapRadius = interpolationConfig.resolution === 'alta' ? 20 : 
+                             interpolationConfig.resolution === 'baja' ? 30 : 25;
+        
+        const heatmapBlur = interpolationConfig.smoothing ? 
+                           (interpolationConfig.resolution === 'alta' ? 10 : 15) : 
+                           (interpolationConfig.resolution === 'alta' ? 5 : 8);
+        
+        // @ts-ignore - L.heatLayer no es reconocido por TypeScript
+        heatLayer.current = (L as any).heatLayer(heatData, {
+          radius: heatmapRadius,
+          blur: heatmapBlur,
+          maxZoom: 17,
+          minOpacity: interpolationConfig.intensity === 'alta' ? 0.5 : 
+                     interpolationConfig.intensity === 'baja' ? 0.3 : 0.4,
+          gradient: {
+            0.0: activeMetric === 'temperatura' ? '#4575b4' : 
+                  activeMetric === 'humedadSuelo' ? '#d73027' : '#4ade80',
+            0.25: activeMetric === 'temperatura' ? '#91bfdb' : 
+                  activeMetric === 'humedadSuelo' ? '#fc8d59' : '#facc15',
+            0.5: activeMetric === 'temperatura' ? '#ffffbf' : 
+                  activeMetric === 'humedadSuelo' ? '#ffffbf' : '#facc15',
+            0.75: activeMetric === 'temperatura' ? '#fc8d59' : 
+                  activeMetric === 'humedadSuelo' ? '#91bfdb' : '#f97316',
+            1.0: activeMetric === 'temperatura' ? '#d73027' : 
+                  activeMetric === 'humedadSuelo' ? '#4575b4' : '#ef4444',
+          }
+        }).addTo(leafletMap.current);
+        
+        // Ajustar la opacidad de los marcadores para que el heatmap sea más visible
+        markersLayer.current?.eachLayer((layer: any) => {
+          if (layer.setStyle) {
+            layer.setStyle({ fillOpacity: 0.4, opacity: 0.6 });
+          }
+        });
+        
+        // Añadir control de información sobre el modelo matemático utilizado
+        const infoControl = new L.Control({ position: 'bottomleft' });
+        infoControl.onAdd = function() {
+          const div = L.DomUtil.create('div', 'info-control');
+          div.innerHTML = `
+            <div style="background: rgba(255,255,255,0.8); padding: 8px; border-radius: 5px; box-shadow: 0 1px 5px rgba(0,0,0,0.2); font-size: 11px; max-width: 200px;">
+              <div style="margin-bottom: 3px; font-weight: bold;">Modelo de Interpolación</div>
+              <div>IDW (Inverse Distance Weighting) adaptativo con:</div>
+              <ul style="margin: 3px 0 3px 15px; padding: 0;">
+                <li>Resolución: ${interpolationConfig.resolution}</li>
+                <li>Intensidad: ${interpolationConfig.intensity}</li>
+                <li>Suavizado: ${interpolationConfig.smoothing ? 'Activado' : 'Desactivado'}</li>
+                <li>Potencia: ${(window as any).__interpolationParams?.potencia.toFixed(1) || '2.2'}</li>
+              </ul>
+              <div style="font-style: italic; margin-top: 3px; font-size: 10px;">
+                Los valores continuos se calculan ponderando los puntos cercanos con mayor influencia.
+              </div>
             </div>
-          </div>
-        `;
-        return div;
-      };
-      
-      // Eliminar controles de info previos para evitar duplicados
-      document.querySelectorAll('.info-control').forEach(el => el.remove());
-      infoControl.addTo(leafletMap.current);
+          `;
+          return div;
+        };
+        
+        // Eliminar controles de info previos para evitar duplicados
+        document.querySelectorAll('.info-control').forEach(el => el.remove());
+        infoControl.addTo(leafletMap.current);
+      } else {
+        // Mostrar mensaje si el plugin no está disponible
+        console.warn('Plugin leaflet.heat no disponible. No se muestra el mapa de calor.');
+        
+        // Añadir un mensaje en el mapa
+        const warningControl = new L.Control({ position: 'bottomleft' });
+        warningControl.onAdd = function() {
+          const div = L.DomUtil.create('div', 'warning-control');
+          div.innerHTML = `
+            <div style="background: rgba(255,255,255,0.8); padding: 8px; border-radius: 5px; box-shadow: 0 1px 5px rgba(0,0,0,0.2); font-size: 11px;">
+              <div style="color: #e65100; font-weight: bold;">Mapa de calor no disponible</div>
+              <div>Mostrando solo marcadores de datos.</div>
+            </div>
+          `;
+          return div;
+        };
+        
+        // Eliminar mensajes previos para evitar duplicados
+        document.querySelectorAll('.warning-control').forEach(el => el.remove());
+        warningControl.addTo(leafletMap.current);
+      }
     }
     
     // 4. Actualizar la leyenda
